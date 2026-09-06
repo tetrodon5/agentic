@@ -5,17 +5,41 @@ class ResearcherAgent:
     def __init__(self, client: OpenAI):
         self.client = client
 
-    def run(self, question: str, research_plan: str):
+    def run(
+        self,
+        question: str,
+        research_plan: str,
+        rag_context: str,
+        memory_context: str
+    ):
         response = self.client.responses.create(
             model="gpt-5.6-luna",
             input=(
                 "Tu es un agent de recherche scientifique spécialisé dans le vin, "
-                "la viticulture et l'œnologie. "
-                "Tu dois suivre le plan de recherche fourni par l'orchestrateur. "
-                "Analyse la question et fournis une réponse scientifique concise, "
-                "factuelle et prudente.\n\n"
-                f"Question : {question}\n\n"
-                f"Plan de l'orchestrateur :\n{research_plan}"
+                "la viticulture et l'œnologie.\n\n"
+
+                "Tu dois suivre le plan fourni par l'orchestrateur.\n\n"
+
+                "RÈGLE DE PRIORITÉ DES SOURCES :\n"
+                "1. Les sources documentaires RAG sont prioritaires.\n"
+                "2. La mémoire générée peut compléter l'analyse mais elle n'est pas "
+                "considérée comme une source scientifique validée.\n"
+                "3. Si la mémoire contredit les documents, privilégie les documents.\n"
+                "4. Si les documents ne permettent pas de confirmer une affirmation, "
+                "indique clairement qu'elle relève de connaissances générales ou "
+                "d'une mémoire générée non validée.\n"
+                "5. Ne présente jamais une mémoire générée comme une source documentaire.\n\n"
+
+                f"QUESTION UTILISATEUR :\n{question}\n\n"
+
+                f"PLAN DE L'ORCHESTRATEUR :\n"
+                f"{research_plan}\n\n"
+
+                f"SOURCES DOCUMENTAIRES RAG :\n"
+                f"{rag_context}\n\n"
+
+                f"MÉMOIRE GÉNÉRÉE NON VALIDÉE :\n"
+                f"{memory_context}\n"
             )
         )
 

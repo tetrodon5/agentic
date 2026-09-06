@@ -11,6 +11,9 @@ from agents.researcher import ResearcherAgent
 from agents.critic import CriticAgent
 from agents.communicator import CommunicatorAgent
 
+from rag_search import search
+from memory import save_memory_entry, search_memory
+
 
 # ==================================================
 # CONFIGURATION
@@ -53,7 +56,7 @@ def calculate_cost(input_tokens, output_tokens):
 
 
 # ==================================================
-# DESIGN GLOBAL
+# DESIGN
 # ==================================================
 
 st.markdown(
@@ -63,10 +66,8 @@ st.markdown(
     :root {
         --wine: #701C3A;
         --wine-dark: #4E1328;
-        --cream: #F7F3EE;
         --cream-light: #FCFAF7;
         --ink: #242A35;
-        --muted: #7C7A79;
         --border: #D9CEC7;
     }
 
@@ -259,8 +260,8 @@ with hero_left:
         '<div class="hero-copy">'
         "Une démonstration d'écosystème agentique appliqué aux "
         "connaissances scientifiques et culturelles du vin. "
-        "Chaque réponse est construite par plusieurs agents spécialisés "
-        "qui planifient, analysent, challengent et vulgarisent."
+        "Le système combine recherche documentaire, mémoire générée, "
+        "contrôle scientifique et médiation."
         '</div>',
         unsafe_allow_html=True
     )
@@ -278,20 +279,13 @@ with hero_right:
         """
         <div class="demo-card">
             <div class="demo-card-label">Démonstrateur</div>
-            <div class="demo-card-title">Écosystème multi-agents</div>
+            <div class="demo-card-title">Écosystème multi-agents + RAG</div>
             <div style="line-height:1.9;color:#3E3A3A;">
+                RAG documentaire<br>
+                Mémoire sémantique<br>
                 Orchestration<br>
-                Recherche<br>
                 Vérification<br>
                 Médiation
-            </div>
-            <div style="
-                margin-top:1.1rem;
-                color:#701C3A;
-                font-size:0.85rem;
-                font-weight:600;
-            ">
-                Bordeaux, science & connaissance
             </div>
         </div>
         """,
@@ -365,10 +359,63 @@ if launch:
 
     start_time = time.time()
 
+
+    # ==================================================
+    # RAG DOCUMENTAIRE
+    # ==================================================
+
+    rag_results = search(
+        question,
+        top_k=2
+    )
+
+    rag_context = ""
+
+    for result in rag_results:
+        rag_context += (
+            f"\nSource : {result['source']} "
+            f"| Chunk : {result['chunk_id']} "
+            f"| Score : {result['score']:.3f}\n"
+            f"{result['text']}\n"
+        )
+
+
+    # ==================================================
+    # MÉMOIRE SÉMANTIQUE
+    # ==================================================
+
+    memory_results = search_memory(
+        question,
+        top_k=2,
+        minimum_score=0.70
+    )
+
+    memory_context = ""
+
+    for result in memory_results:
+        memory_context += (
+            f"\nMémoire ID : {result['id']} "
+            f"| Score : {result['score']:.3f} "
+            f"| Statut : {result['status']}\n"
+            f"Question précédente : {result['question']}\n"
+            f"Réponse précédente : {result['answer']}\n"
+        )
+
+
+    # ==================================================
+    # AGENTS
+    # ==================================================
+
     with st.status(
         "Analyse agentique en cours...",
         expanded=True
     ) as status:
+
+        st.write("RAG — recherche des passages documentaires")
+        st.write(f"{len(rag_results)} passages retrouvés")
+
+        st.write("Mémoire — recherche des analyses précédentes")
+        st.write(f"{len(memory_results)} mémoire(s) proche(s) retrouvée(s)")
 
         st.write("Orchestrateur — analyse et planification")
         orchestrator_result = orchestrator.run(question)
@@ -376,7 +423,9 @@ if launch:
         st.write("Chercheur — investigation scientifique")
         research_result = researcher.run(
             question,
-            orchestrator_result["text"]
+            orchestrator_result["text"],
+            rag_context,
+            memory_context
         )
 
         st.write("Critique scientifique — vérification et challenge")
@@ -402,7 +451,7 @@ if launch:
 
 
     # ==================================================
-    # COÛTS PAR AGENT
+    # COUTS
     # ==================================================
 
     agents_data = [
@@ -451,7 +500,6 @@ if launch:
         df["Tokens"] / total_tokens * 100
     ).round(1)
 
-    # Affichage plus lisible des coûts
     df["Coût estimé ($)"] = df["Coût ($)"].map(
         lambda x: f"{x:.6f}"
     )
@@ -474,6 +522,66 @@ if launch:
 
 
     # ==================================================
+    # SOURCES RAG
+    # ==================================================
+
+    st.divider()
+
+    st.markdown(
+        '<div class="section-kicker">Grounding</div>',
+        unsafe_allow_html=True
+    )
+
+    st.header("Sources documentaires utilisées")
+
+    for result in rag_results:
+
+        score_percent = result["score"] * 100
+
+        with st.expander(
+            f"{result['source']} — pertinence {score_percent:.1f}%"
+        ):
+            st.caption(
+                f"Chunk {result['chunk_id']}"
+            )
+            st.markdown(result["text"])
+
+
+    # ==================================================
+    # MEMOIRE UTILISEE
+    # ==================================================
+
+    st.subheader("Mémoire réutilisée")
+
+    if not memory_results:
+
+        st.caption(
+            "Aucune analyse antérieure suffisamment proche n'a été utilisée."
+        )
+
+    else:
+
+        for result in memory_results:
+
+            score_percent = result["score"] * 100
+
+            with st.expander(
+                f"Mémoire #{result['id']} — pertinence {score_percent:.1f}%"
+            ):
+                st.write(
+                    f"Statut : {result['status']}"
+                )
+                st.write(
+                    f"Question précédente : {result['question']}"
+                )
+
+                st.warning(
+                    "Cette mémoire est générée par l'IA et n'est pas "
+                    "considérée comme une source documentaire validée."
+                )
+
+
+    # ==================================================
     # OBSERVABILITE
     # ==================================================
 
@@ -486,15 +594,10 @@ if launch:
 
     st.header("Observabilité & coûts")
 
-
-    # ==================================================
-    # METRIQUES PRINCIPALES
-    # ==================================================
-
     m1, m2, m3, m4 = st.columns(4)
 
     m1.metric(
-        "Agents mobilisés",
+        "Agents",
         "4"
     )
 
@@ -518,8 +621,6 @@ if launch:
     # TABLEAU
     # ==================================================
 
-    st.caption("Consommation et coût par agent")
-
     display_df = df[
         [
             "Agent",
@@ -541,7 +642,7 @@ if launch:
 
 
     # ==================================================
-    # PONDÉRATION + COÛT
+    # GRAPHIQUES
     # ==================================================
 
     left, right = st.columns(2)
@@ -578,7 +679,7 @@ if launch:
 
 
     # ==================================================
-    # PROJECTION DE COÛT
+    # PROJECTION
     # ==================================================
 
     st.subheader("Projection de coût")
@@ -591,41 +692,14 @@ if launch:
     )
 
     p2.metric(
-        "100 analyses similaires",
+        "100 analyses",
         f"${total_cost * 100:.2f}"
     )
 
     p3.metric(
-        "1 000 analyses similaires",
+        "1 000 analyses",
         f"${total_cost * 1000:.2f}"
     )
-
-    st.caption(
-        "Projection indicative basée sur la consommation de ce run "
-        "et les tarifs GPT-5.6 Luna. La consommation réelle varie "
-        "selon la longueur et la complexité des questions et réponses."
-    )
-
-
-    # ==================================================
-    # CONTRIBUTION
-    # ==================================================
-
-    st.caption("Contribution relative des agents")
-
-    for _, row in df.iterrows():
-
-        c1, c2 = st.columns([4, 1])
-
-        with c1:
-            st.write(row["Agent"])
-
-        with c2:
-            st.write(f'{row["Pondération (%)"]} %')
-
-        st.progress(
-            int(row["Pondération (%)"])
-        )
 
 
     # ==================================================
@@ -652,3 +726,31 @@ if launch:
 
     with st.expander("Médiateur scientifique — synthèse"):
         st.markdown(communicator_result["text"])
+
+
+    # ==================================================
+    # SAUVEGARDE MEMOIRE
+    # ==================================================
+
+    sources_used = [
+        {
+            "source": result["source"],
+            "chunk_id": result["chunk_id"],
+            "score": result["score"]
+        }
+        for result in rag_results
+    ]
+
+    memory_entry = save_memory_entry(
+        question=question,
+        answer=communicator_result["text"],
+        critique=critic_result["text"],
+        sources=sources_used,
+        total_tokens=total_tokens,
+        total_cost=total_cost
+    )
+
+    st.caption(
+        f"Nouvelle analyse mémorisée — ID {memory_entry['id']} "
+        f"| statut : {memory_entry['status']}"
+    )
