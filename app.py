@@ -47,7 +47,8 @@ question = input(
 
 rag_results = search(
     question,
-    top_k=2
+    top_k=2,
+    minimum_score=0.55
 )
 
 rag_context = ""
@@ -139,7 +140,8 @@ print(research_result["text"])
 
 critic_result = critic.run(
     question,
-    research_result["text"]
+    research_result["text"],
+    rag_context=rag_context
 )
 
 print("\n=== CRITIQUE SCIENTIFIQUE ===")

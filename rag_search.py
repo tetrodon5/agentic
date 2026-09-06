@@ -85,7 +85,8 @@ def create_query_embedding(
 
 def search(
     question,
-    top_k=2
+    top_k=2,
+    minimum_score=None
 ):
 
     index_data, matrix = (
@@ -111,6 +112,9 @@ def search(
     results = []
 
     for idx in top_indices:
+
+        if minimum_score is not None and scores[idx] < minimum_score:
+            continue
 
         item = index_data[
             int(idx)

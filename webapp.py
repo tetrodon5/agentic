@@ -1245,7 +1245,8 @@ if launch:
 
         rag_results = search(
             question,
-            top_k=2
+            top_k=2,
+            minimum_score=0.55
         )
 
 
@@ -1375,7 +1376,8 @@ if launch:
         critic_result = (
             critic.run(
                 agent_question,
-                research_result["text"]
+                research_result["text"],
+                rag_context=rag_context
             )
         )
 

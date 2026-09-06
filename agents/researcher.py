@@ -12,6 +12,11 @@ class ResearcherAgent:
         rag_context: str,
         memory_context: str
     ):
+        rag_context_for_prompt = rag_context or (
+            "Aucun appui documentaire suffisamment pertinent n'a été trouvé. "
+            "Signale cette limite et distingue les connaissances générales "
+            "et la mémoire générée des affirmations étayées par des documents."
+        )
         response = self.client.responses.create(
             model="gpt-5.6-luna",
             input=(
@@ -36,7 +41,7 @@ class ResearcherAgent:
                 f"{research_plan}\n\n"
 
                 f"SOURCES DOCUMENTAIRES RAG :\n"
-                f"{rag_context}\n\n"
+                f"{rag_context_for_prompt}\n\n"
 
                 f"MÉMOIRE GÉNÉRÉE NON VALIDÉE :\n"
                 f"{memory_context}\n"
