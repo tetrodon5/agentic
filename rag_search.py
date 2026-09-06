@@ -3,7 +3,8 @@ import numpy as np
 from pathlib import Path
 from openai import OpenAI
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 
 INDEX_FILE = Path("data/index.json")
 
