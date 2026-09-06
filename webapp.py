@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -8,15 +9,17 @@ from agents.researcher import ResearcherAgent
 from agents.critic import CriticAgent
 from agents.communicator import CommunicatorAgent
 
+
+# -----------------------------
+# Configuration
+# -----------------------------
+
 load_dotenv()
 
 st.set_page_config(
     page_title="Agent scientifique - Cité du Vin",
     layout="wide"
 )
-
-st.title("Agent scientifique - Cité du Vin")
-st.caption("Démonstration d’un écosystème agentique multi-agents")
 
 try:
     api_key = st.secrets["OPENAI_API_KEY"]
@@ -25,57 +28,85 @@ except Exception:
 
 client = OpenAI(api_key=api_key)
 
+
+# -----------------------------
+# Agents
+# -----------------------------
+
 orchestrator = OrchestratorAgent(client)
 researcher = ResearcherAgent(client)
 critic = CriticAgent(client)
 communicator = CommunicatorAgent(client)
 
-question = st.text_input(
-    "Posez votre question scientifique :",
-    placeholder="Ex. Pourquoi certains vins vieillissent-ils mieux que d'autres ?"
+
+# -----------------------------
+# Interface
+# -----------------------------
+
+st.title("Agent scientifique - Cité du Vin")
+
+st.caption(
+    "Démonstration d’un écosystème agentique pour la recherche "
+    "et la médiation scientifique."
 )
 
-if st.button("Lancer l'analyse"):
+st.write(
+    "Une question est analysée par plusieurs agents spécialisés "
+    "avant de produire une réponse scientifique vulgarisée."
+)
 
-    if not question:
+question = st.text_area(
+    "Posez votre question scientifique",
+    placeholder="Ex. Pourquoi certains vins vieillissent-ils mieux que d'autres ?",
+    height=90
+)
+
+launch = st.button("Lancer l'analyse scientifique")
+
+
+# -----------------------------
+# Exécution
+# -----------------------------
+
+if launch:
+
+    if not question.strip():
         st.warning("Veuillez saisir une question.")
         st.stop()
 
-    st.divider()
+    start_time = time.time()
 
     with st.status("Analyse agentique en cours...", expanded=True) as status:
 
-        st.write("Orchestrateur : analyse de la question")
+        st.write("Orchestrateur — planification")
         orchestrator_result = orchestrator.run(question)
-        st.write("✓ Plan scientifique établi")
 
-        st.write("Researcher : recherche et analyse scientifique")
+        st.write("Chercheur — recherche scientifique")
         research_result = researcher.run(
             question,
             orchestrator_result["text"]
         )
-        st.write("✓ Recherche terminée")
 
-        st.write("Critic : vérification et challenge scientifique")
+        st.write("Critique scientifique — vérification scientifique")
         critic_result = critic.run(
             question,
             research_result["text"]
         )
-        st.write("✓ Vérification terminée")
 
-        st.write("Communicator : synthèse et vulgarisation")
+        st.write("Communication — synthèse")
         communicator_result = communicator.run(
             question,
             research_result["text"],
             critic_result["text"]
         )
-        st.write("✓ Réponse finale produite")
 
         status.update(
             label="Analyse terminée",
             state="complete",
             expanded=False
         )
+
+    elapsed_time = time.time() - start_time
 
     total_tokens = (
         orchestrator_result["total_tokens"]
@@ -84,57 +115,67 @@ if st.button("Lancer l'analyse"):
         + communicator_result["total_tokens"]
     )
 
+
+    # -----------------------------
+    # Réponse finale
+    # -----------------------------
+
     st.divider()
 
-    st.subheader("Réponse scientifique")
+    st.header("Réponse scientifique")
 
-    st.markdown(
-        communicator_result["text"]
-    )
+    st.markdown(communicator_result["text"])
+
+
+    # -----------------------------
+    # Processus agentique
+    # -----------------------------
 
     st.divider()
 
     st.subheader("Processus agentique")
 
-    col1, col2, col3, col4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
-    col1.metric(
-        "Orchestrator",
-        f'{orchestrator_result["total_tokens"]} tokens'
-    )
+    c1.markdown("**Orchestrateur**")
+    c1.caption("Planifie")
 
-    col2.metric(
-        "Researcher",
-        f'{research_result["total_tokens"]} tokens'
-    )
+    c2.markdown("**Chercheur**")
+    c2.caption("Analyse")
 
-    col3.metric(
-        "Critic",
-        f'{critic_result["total_tokens"]} tokens'
-    )
+    c3.markdown("**Critique scientifique**")
+    c3.caption("Challenge")
 
-    col4.metric(
-        "Communicator",
-        f'{communicator_result["total_tokens"]} tokens'
-    )
+    c4.markdown("**Communication**")
+    c4.caption("Vulgarise")
 
-    st.metric(
-        "Consommation totale",
-        f"{total_tokens} tokens"
-    )
+
+    # -----------------------------
+    # Observabilité
+    # -----------------------------
 
     st.divider()
 
-    st.subheader("Voir le raisonnement des agents")
+    st.subheader("Observabilité")
 
-    with st.expander("Orchestrator - Plan scientifique"):
+    m1, m2, m3 = st.columns(3)
+
+    m1.metric("Agents", "4")
+    m2.metric("Tokens", f"{total_tokens:,}".replace(",", " "))
+    m3.metric("Temps", f"{elapsed_time:.1f} s")
+
+
+    # -----------------------------
+    # Détails
+    # -----------------------------
+
+    st.divider()
+
+    with st.expander("Voir le plan de l'Orchestrator"):
         st.markdown(orchestrator_result["text"])
 
-    with st.expander("Researcher - Analyse scientifique"):
+    with st.expander("Voir l'analyse du Researcher"):
         st.markdown(research_result["text"])
 
-    with st.expander("Critic - Vérification scientifique"):
+    with st.expander("Voir la critique scientifique"):
         st.markdown(critic_result["text"])
-
-    with st.expander("Communicator - Synthèse finale"):
-        st.markdown(communicator_result["text"])
