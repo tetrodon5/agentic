@@ -1,0 +1,13 @@
+TITRE : Levures et fermentation alcoolique
+SOURCE : INRAE
+THÈMES : fermentation, levures, Saccharomyces cerevisiae, sucre, alcool, arômes
+
+La fermentation alcoolique est une étape centrale de la vinification. Des levures transforment les sucres du moût de raisin en alcool et produisent également de nombreux composés qui influencent le profil aromatique du vin.
+
+Saccharomyces cerevisiae est l'espèce la plus couramment utilisée en vinification. Elle joue un rôle majeur dans la conduite de la fermentation. D'autres microorganismes peuvent aussi intervenir, particulièrement au début du processus, avant que l'augmentation de la teneur en alcool ne limite leur développement.
+
+Les levures n'ont pas seulement pour fonction de produire de l'éthanol. Leur métabolisme génère aussi des molécules volatiles et peut révéler ou transformer des précurseurs aromatiques présents dans le raisin.
+
+Le profil aromatique final dépend donc d'une combinaison de facteurs : cépage, maturité du raisin, climat, terroir, pratiques viticoles et choix réalisés pendant la vinification. La souche de levure utilisée peut modifier sensiblement certains arômes.
+
+Certaines recherches visent à sélectionner des levures capables de produire ou de libérer certains composés aromatiques tout en limitant l'emploi d'intrants externes. Cela montre que la fermentation est à la fois un phénomène biologique fondamental et un levier important de construction du style du vin.
