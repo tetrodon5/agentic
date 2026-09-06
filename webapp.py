@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 import time
+import random
+import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -10,15 +12,16 @@ from agents.critic import CriticAgent
 from agents.communicator import CommunicatorAgent
 
 
-# -----------------------------
-# Configuration
-# -----------------------------
+# ==================================================
+# CONFIGURATION
+# ==================================================
 
 load_dotenv()
 
 st.set_page_config(
     page_title="Agent scientifique - Cité du Vin",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 try:
@@ -29,9 +32,162 @@ except Exception:
 client = OpenAI(api_key=api_key)
 
 
-# -----------------------------
-# Agents
-# -----------------------------
+# ==================================================
+# DESIGN GLOBAL
+# ==================================================
+
+st.markdown(
+    """
+    <style>
+
+    :root {
+        --wine: #701C3A;
+        --wine-dark: #4E1328;
+        --cream: #F7F3EE;
+        --cream-light: #FCFAF7;
+        --ink: #242A35;
+        --muted: #7C7A79;
+        --border: #D9CEC7;
+    }
+
+    .stApp {
+        background: var(--cream-light);
+    }
+
+    .block-container {
+        max-width: 1380px;
+        padding-top: 1.2rem;
+        padding-bottom: 3rem;
+    }
+
+    h1, h2, h3 {
+        color: var(--ink);
+    }
+
+    h1 {
+        font-size: 3rem !important;
+        line-height: 1.05 !important;
+        letter-spacing: -1px;
+    }
+
+    .hero-kicker {
+        color: #8A8582;
+        font-size: 0.82rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.45rem;
+        line-height: 1.3;
+        color: var(--ink);
+        font-weight: 600;
+        margin-top: 0.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero-copy {
+        color: #4F4D4C;
+        font-size: 1rem;
+        line-height: 1.7;
+        max-width: 760px;
+    }
+
+    .hero-tags {
+        margin-top: 1.4rem;
+        color: var(--wine);
+        font-size: 0.82rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .demo-card {
+        background: #FFFFFF;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.3rem 1.4rem;
+        min-height: 210px;
+        box-shadow: 0 6px 22px rgba(70, 43, 53, 0.05);
+    }
+
+    .demo-card-title {
+        color: var(--wine);
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+    }
+
+    .demo-card-label {
+        color: #8C8987;
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 0.7rem;
+    }
+
+    .section-kicker {
+        color: var(--wine);
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .stButton > button {
+        border-radius: 8px;
+        border: 1px solid var(--wine);
+        background: white;
+        color: var(--wine);
+        font-weight: 600;
+        min-height: 46px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .stButton > button:hover {
+        background: #F5EBEF;
+        border-color: var(--wine-dark);
+        color: var(--wine-dark);
+    }
+
+    div[data-testid="stTextArea"] textarea {
+        border-radius: 10px;
+        background: #F3F5F7;
+        border: 1px solid #E4E6E8;
+        min-height: 100px;
+    }
+
+    [data-testid="stMetric"] {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 4px 18px rgba(60, 40, 45, 0.04);
+    }
+
+    div[data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    hr {
+        border-color: #DDD4CE;
+        margin-top: 1.8rem;
+        margin-bottom: 1.8rem;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ==================================================
+# AGENTS
+# ==================================================
 
 orchestrator = OrchestratorAgent(client)
 researcher = ResearcherAgent(client)
@@ -39,61 +195,183 @@ critic = CriticAgent(client)
 communicator = CommunicatorAgent(client)
 
 
-# -----------------------------
-# Interface
-# -----------------------------
+# ==================================================
+# QUESTIONS SUGGÉRÉES
+# ==================================================
 
-st.title("Agent scientifique - Cité du Vin")
+question_bank = [
+    "Pourquoi certains vins vieillissent-ils mieux que d'autres ?",
+    "Quel rôle joue le terroir dans le goût du vin ?",
+    "Pourquoi la couleur d'un vin rouge évolue-t-elle avec le temps ?",
+    "Comment le changement climatique modifie-t-il les vins de Bordeaux ?",
+    "Pourquoi certains vins sentent-ils les fruits rouges alors qu'ils n'en contiennent pas ?",
+    "Comment les levures transforment-elles le jus de raisin en vin ?",
+    "Pourquoi certains vins sont-ils plus acides que d'autres ?",
+    "Quel est le rôle des tanins dans le vin ?",
+    "Pourquoi sert-on certains vins plus frais que d'autres ?",
+    "Comment le bois d'une barrique influence-t-il le vin ?"
+]
+
+if "suggestions" not in st.session_state:
+    st.session_state.suggestions = random.sample(question_bank, 3)
+
+if "question" not in st.session_state:
+    st.session_state.question = ""
+
+
+# ==================================================
+# HERO
+# ==================================================
+
+hero_left, hero_right = st.columns([2.5, 1])
+
+with hero_left:
+
+    st.markdown(
+        '<div class="hero-kicker">FCCV | DÉMONSTRATION IA</div>',
+        unsafe_allow_html=True
+    )
+
+    st.title("Agent scientifique")
+
+    st.markdown(
+        '<div class="hero-subtitle">'
+        'Recherche, contrôle scientifique et médiation'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="hero-copy">'
+        "Une démonstration d'écosystème agentique appliqué aux "
+        "connaissances scientifiques et culturelles du vin. "
+        "Chaque réponse est construite par plusieurs agents spécialisés "
+        "qui planifient, analysent, challengent et vulgarisent."
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="hero-tags">'
+        'Patrimoine · Science · Culture · Partage'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+with hero_right:
+
+    st.markdown(
+        """
+        <div class="demo-card">
+            <div class="demo-card-label">Démonstrateur</div>
+            <div class="demo-card-title">Écosystème multi-agents</div>
+            <div style="line-height:1.9;color:#3E3A3A;">
+                Orchestration<br>
+                Recherche<br>
+                Vérification<br>
+                Médiation
+            </div>
+            <div style="
+                margin-top:1.1rem;
+                color:#701C3A;
+                font-size:0.85rem;
+                font-weight:600;
+            ">
+                Bordeaux, science & connaissance
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+st.divider()
+
+
+# ==================================================
+# QUESTIONS
+# ==================================================
+
+st.markdown(
+    '<div class="section-kicker">Explorer</div>',
+    unsafe_allow_html=True
+)
+
+st.header("Que souhaitez-vous explorer ?")
 
 st.caption(
-    "Démonstration d’un écosystème agentique pour la recherche "
-    "et la médiation scientifique."
+    "Choisissez une question ou interrogez directement l'agent scientifique."
 )
 
-st.write(
-    "Une question est analysée par plusieurs agents spécialisés "
-    "avant de produire une réponse scientifique vulgarisée."
-)
+q1, q2, q3 = st.columns(3)
+
+with q1:
+    if st.button(
+        st.session_state.suggestions[0],
+        width="stretch"
+    ):
+        st.session_state.question = st.session_state.suggestions[0]
+
+with q2:
+    if st.button(
+        st.session_state.suggestions[1],
+        width="stretch"
+    ):
+        st.session_state.question = st.session_state.suggestions[1]
+
+with q3:
+    if st.button(
+        st.session_state.suggestions[2],
+        width="stretch"
+    ):
+        st.session_state.question = st.session_state.suggestions[2]
+
 
 question = st.text_area(
-    "Posez votre question scientifique",
-    placeholder="Ex. Pourquoi certains vins vieillissent-ils mieux que d'autres ?",
-    height=90
+    "Votre question scientifique",
+    value=st.session_state.question,
+    placeholder="Posez librement votre question...",
+    height=100
 )
 
-launch = st.button("Lancer l'analyse scientifique")
+launch = st.button(
+    "Lancer l'analyse scientifique",
+    type="primary"
+)
 
 
-# -----------------------------
-# Exécution
-# -----------------------------
+# ==================================================
+# EXECUTION
+# ==================================================
 
 if launch:
 
     if not question.strip():
-        st.warning("Veuillez saisir une question.")
+        st.warning("Veuillez saisir ou sélectionner une question.")
         st.stop()
 
     start_time = time.time()
 
-    with st.status("Analyse agentique en cours...", expanded=True) as status:
+    with st.status(
+        "Analyse agentique en cours...",
+        expanded=True
+    ) as status:
 
-        st.write("Orchestrateur — planification")
+        st.write("Orchestrateur — analyse et planification")
         orchestrator_result = orchestrator.run(question)
 
-        st.write("Chercheur — recherche scientifique")
+        st.write("Chercheur — investigation scientifique")
         research_result = researcher.run(
             question,
             orchestrator_result["text"]
         )
 
-        st.write("Critique scientifique — vérification scientifique")
+        st.write("Critique scientifique — vérification et challenge")
         critic_result = critic.run(
             question,
             research_result["text"]
         )
 
-        st.write("Communication — synthèse")
+        st.write("Médiateur scientifique — synthèse et vulgarisation")
         communicator_result = communicator.run(
             question,
             research_result["text"],
@@ -116,66 +394,160 @@ if launch:
     )
 
 
-    # -----------------------------
-    # Réponse finale
-    # -----------------------------
+    # ==================================================
+    # REPONSE
+    # ==================================================
 
     st.divider()
+
+    st.markdown(
+        '<div class="section-kicker">Résultat</div>',
+        unsafe_allow_html=True
+    )
 
     st.header("Réponse scientifique")
 
     st.markdown(communicator_result["text"])
 
 
-    # -----------------------------
-    # Processus agentique
-    # -----------------------------
+    # ==================================================
+    # OBSERVABILITE
+    # ==================================================
 
     st.divider()
 
-    st.subheader("Processus agentique")
+    st.markdown(
+        '<div class="section-kicker">Pilotage du système</div>',
+        unsafe_allow_html=True
+    )
 
-    c1, c2, c3, c4 = st.columns(4)
+    st.header("Observabilité de l'écosystème")
 
-    c1.markdown("**Orchestrateur**")
-    c1.caption("Planifie")
+    agents_data = [
+        {
+            "Agent": "Orchestrateur",
+            "Fonction": "Planification",
+            "Tokens": orchestrator_result["total_tokens"]
+        },
+        {
+            "Agent": "Chercheur",
+            "Fonction": "Analyse scientifique",
+            "Tokens": research_result["total_tokens"]
+        },
+        {
+            "Agent": "Critique scientifique",
+            "Fonction": "Contrôle",
+            "Tokens": critic_result["total_tokens"]
+        },
+        {
+            "Agent": "Médiateur scientifique",
+            "Fonction": "Vulgarisation",
+            "Tokens": communicator_result["total_tokens"]
+        }
+    ]
 
-    c2.markdown("**Chercheur**")
-    c2.caption("Analyse")
+    df = pd.DataFrame(agents_data)
 
-    c3.markdown("**Critique scientifique**")
-    c3.caption("Challenge")
-
-    c4.markdown("**Communication**")
-    c4.caption("Vulgarise")
+    df["Pondération (%)"] = (
+        df["Tokens"] / total_tokens * 100
+    ).round(1)
 
 
-    # -----------------------------
-    # Observabilité
-    # -----------------------------
-
-    st.divider()
-
-    st.subheader("Observabilité")
+    # ==================================================
+    # METRIQUES
+    # ==================================================
 
     m1, m2, m3 = st.columns(3)
 
-    m1.metric("Agents", "4")
-    m2.metric("Tokens", f"{total_tokens:,}".replace(",", " "))
-    m3.metric("Temps", f"{elapsed_time:.1f} s")
+    m1.metric(
+        "Agents mobilisés",
+        "4"
+    )
+
+    m2.metric(
+        "Tokens consommés",
+        f"{total_tokens:,}".replace(",", " ")
+    )
+
+    m3.metric(
+        "Temps d'exécution",
+        f"{elapsed_time:.1f} s"
+    )
 
 
-    # -----------------------------
-    # Détails
-    # -----------------------------
+    # ==================================================
+    # TABLEAU + GRAPH
+    # ==================================================
+
+    left, right = st.columns([1.4, 1])
+
+    with left:
+
+        st.caption("Répartition par agent")
+
+        st.dataframe(
+            df,
+            width="stretch",
+            hide_index=True,
+            height=180
+        )
+
+    with right:
+
+        st.caption("Pondération du traitement")
+
+        chart_df = (
+            df[["Agent", "Pondération (%)"]]
+            .set_index("Agent")
+        )
+
+        st.bar_chart(
+            chart_df,
+            height=220,
+            width="stretch"
+        )
+
+
+    # ==================================================
+    # CONTRIBUTION RELATIVE
+    # ==================================================
+
+    st.caption("Contribution relative des agents")
+
+    for _, row in df.iterrows():
+
+        c_name, c_pct = st.columns([3, 1])
+
+        with c_name:
+            st.write(row["Agent"])
+
+        with c_pct:
+            st.write(f'{row["Pondération (%)"]} %')
+
+        st.progress(int(row["Pondération (%)"]))
+
+
+    # ==================================================
+    # DETAILS
+    # ==================================================
 
     st.divider()
 
-    with st.expander("Voir le plan de l'Orchestrator"):
+    st.markdown(
+        '<div class="section-kicker">Transparence</div>',
+        unsafe_allow_html=True
+    )
+
+    st.header("Explorer le travail des agents")
+
+    with st.expander("Orchestrateur — plan scientifique"):
         st.markdown(orchestrator_result["text"])
 
-    with st.expander("Voir l'analyse du Researcher"):
+    with st.expander("Chercheur — analyse scientifique"):
         st.markdown(research_result["text"])
 
-    with st.expander("Voir la critique scientifique"):
+    with st.expander("Critique scientifique — vérification"):
         st.markdown(critic_result["text"])
+
+    with st.expander("Médiateur scientifique — synthèse"):
+        st.markdown(communicator_result["text"])
