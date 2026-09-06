@@ -1,7 +1,8 @@
 import os
 import time
 import random
-
+import json
+import streamlit.components.v1 as components
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
@@ -1184,13 +1185,16 @@ if launch:
 
         st.stop()
 
-if not is_wine_domain(question):
 
-    st.warning(
-        get_out_of_domain_message()
-    )
+    if not is_wine_domain(question):
 
-    st.stop()
+        st.warning(
+            get_out_of_domain_message()
+        )
+
+        st.stop()
+
+
     st.session_state.user_feedback = None
 
     start_time = time.time()
@@ -1699,11 +1703,129 @@ if not is_wine_domain(question):
             memory_entry
     }
 
+def speak_text_controls(
+    text: str,
+    play_label: str = "Lire la réponse",
+    stop_label: str = "Arrêter"
+):
+
+    text_json = json.dumps(
+        text,
+        ensure_ascii=False
+    )
+
+    html = f"""
+    <div style="
+        display:flex;
+        gap:10px;
+        align-items:center;
+        padding-top:4px;
+    ">
+
+        <button
+            id="playButton"
+            style="
+                background:white;
+                color:#701C3A;
+                border:1px solid #701C3A;
+                border-radius:8px;
+                padding:10px 18px;
+                font-weight:600;
+                cursor:pointer;
+                font-size:14px;
+            "
+        >
+            ▶ {play_label}
+        </button>
+
+        <button
+            id="stopButton"
+            style="
+                background:white;
+                color:#666666;
+                border:1px solid #B8B0AC;
+                border-radius:8px;
+                padding:10px 18px;
+                font-weight:600;
+                cursor:pointer;
+                font-size:14px;
+            "
+        >
+            ■ {stop_label}
+        </button>
+
+    </div>
+
+    <script>
+
+        const textToRead = {text_json};
+
+        document
+            .getElementById("playButton")
+            .addEventListener(
+                "click",
+                function() {{
+
+                    window.speechSynthesis.cancel();
+
+                    const speech =
+                        new SpeechSynthesisUtterance(
+                            textToRead
+                        );
+
+                    speech.lang = "fr-FR";
+                    speech.rate = 1.0;
+                    speech.pitch = 1.0;
+                    speech.volume = 1.0;
+
+                    const voices =
+                        window.speechSynthesis.getVoices();
+
+                    const frenchVoice =
+                        voices.find(
+                            voice =>
+                                voice.lang
+                                &&
+                                voice.lang
+                                    .toLowerCase()
+                                    .startsWith("fr")
+                        );
+
+                    if (frenchVoice) {{
+                        speech.voice = frenchVoice;
+                    }}
+
+                    window.speechSynthesis.speak(
+                        speech
+                    );
+                }}
+            );
+
+
+ document
+            .getElementById("stopButton")
+            .addEventListener(
+                "click",
+                function() {{
+
+                    window.speechSynthesis.cancel();
+
+                }}
+            );
+
+    </script>
+    """
+
+    st.iframe(
+        html,
+        height=65,
+        width="stretch"
+    )
+
 
 # ==================================================
 # RESULTATS
 # ==================================================
-
 if "analysis_payload" in st.session_state:
 
     payload = (
@@ -1754,7 +1876,7 @@ if "analysis_payload" in st.session_state:
     )
 
 
-    # ==================================================
+# ==================================================
     # REPONSE — TOUJOURS VISIBLE
     # ==================================================
 
@@ -1772,6 +1894,10 @@ if "analysis_payload" in st.session_state:
     )
 
     st.markdown(
+        communicator_result["text"]
+    )
+
+    speak_text_controls(
         communicator_result["text"]
     )
 
