@@ -62,9 +62,7 @@ from memory import (
 # CLIENT OPENAI
 # ==================================================
 
-client = OpenAI(
-    api_key=api_key
-)
+client = OpenAI(api_key=api_key)
 
 
 # ==================================================
@@ -81,7 +79,6 @@ def calculate_cost_eur(
     input_tokens,
     output_tokens
 ):
-
     input_cost_usd = (
         input_tokens
         / 1_000_000
@@ -104,7 +101,6 @@ def format_eur(
     value,
     decimals=5
 ):
-
     return (
         f"{value:.{decimals}f} €"
         .replace(".", ",")
@@ -134,14 +130,9 @@ def memory_status_label(status):
     )
 
 
-# ==================================================
-# VALIDATION MEMOIRE
-# ==================================================
-
 def validate_memory_callback(
     memory_id
 ):
-
     result = validate_memory_entry(
         memory_id
     )
@@ -170,7 +161,6 @@ def validate_memory_callback(
                 entry
                 and entry["id"] == memory_id
             ):
-
                 entry["status"] = (
                     "generated_validated"
                 )
@@ -179,7 +169,6 @@ def validate_memory_callback(
 def reject_memory_callback(
     memory_id
 ):
-
     result = reject_memory_entry(
         memory_id
     )
@@ -208,7 +197,6 @@ def reject_memory_callback(
                 entry
                 and entry["id"] == memory_id
             ):
-
                 entry["status"] = (
                     "generated_rejected"
                 )
@@ -225,7 +213,7 @@ def useful_feedback_callback():
     )
 
     st.session_state.feedback_message = (
-        "Merci pour votre retour."
+        "Merci. La réponse est marquée comme utile."
     )
 
     st.session_state.feedback_type = (
@@ -262,7 +250,8 @@ def review_feedback_callback():
             )
 
     st.session_state.feedback_message = (
-        "Merci. Cette réponse est signalée pour révision."
+        "La réponse est marquée à revoir. "
+        "La mémoire associée repasse en attente de validation."
     )
 
     st.session_state.feedback_type = (
@@ -290,7 +279,6 @@ def calculate_provenance(
         )
 
     else:
-
         rag_strength = 0
 
 
@@ -302,7 +290,6 @@ def calculate_provenance(
         )
 
     else:
-
         memory_strength = 0
 
 
@@ -729,7 +716,7 @@ h1 {
     background: var(--soft-green);
     border-radius: 12px;
     padding: 1.15rem 1.25rem;
-    min-height: 90px;
+    min-height: 180px;
     border: 1px solid #DDE8DF;
 }
 
@@ -737,7 +724,7 @@ h1 {
     background: var(--soft-orange);
     border-radius: 12px;
     padding: 1.15rem 1.25rem;
-    min-height: 90px;
+    min-height: 180px;
     border: 1px solid #EDDFD1;
 }
 
@@ -936,13 +923,11 @@ if "memory_message" in st.session_state:
         st.session_state.memory_message_type
         == "success"
     ):
-
         st.success(
             st.session_state.memory_message
         )
 
     else:
-
         st.warning(
             st.session_state.memory_message
         )
@@ -962,13 +947,11 @@ if "feedback_message" in st.session_state:
         st.session_state.feedback_type
         == "success"
     ):
-
         st.success(
             st.session_state.feedback_message
         )
 
     else:
-
         st.warning(
             st.session_state.feedback_message
         )
@@ -1013,9 +996,10 @@ with hero_left:
 
     st.markdown(
         '<div class="hero-copy">'
-        "Explorez les connaissances scientifiques "
-        "et culturelles du vin à travers une expérience "
-        "de médiation adaptée à votre niveau."
+        "Une démonstration d'écosystème agentique appliqué "
+        "aux connaissances scientifiques et culturelles du vin. "
+        "Le système combine recherche documentaire, mémoire sémantique, "
+        "contrôle scientifique, gouvernance et médiation adaptée au public."
         '</div>',
         unsafe_allow_html=True
     )
@@ -1032,17 +1016,16 @@ with hero_right:
 
     st.markdown(
         '<div class="demo-card">'
-        '<div class="demo-card-label">'
-        'Expérience scientifique'
-        '</div>'
+        '<div class="demo-card-label">Démonstrateur</div>'
         '<div class="demo-card-title">'
-        'Explorez le monde du vin'
+        'Écosystème multi-agents + RAG'
         '</div>'
         '<div style="line-height:1.9;color:#3E3A3A;">'
-        'Posez votre question<br>'
-        'Choisissez votre niveau<br>'
-        'Découvrez une réponse adaptée<br>'
-        'Approfondissez si vous le souhaitez'
+        'RAG documentaire<br>'
+        'Mémoire sémantique<br>'
+        'Orchestration<br>'
+        'Vérification scientifique<br>'
+        'Médiation adaptative'
         '</div>'
         '</div>',
         unsafe_allow_html=True
@@ -1129,10 +1112,6 @@ st.header(
     "Que souhaitez-vous explorer ?"
 )
 
-st.caption(
-    "Choisissez une question ou posez librement la vôtre."
-)
-
 
 q1, q2, q3 = st.columns(3)
 
@@ -1148,7 +1127,6 @@ for column, suggestion in zip(
             suggestion,
             width="stretch"
         ):
-
             st.session_state.question = (
                 suggestion
             )
@@ -1195,66 +1173,39 @@ if launch:
 
 
     # ==================================================
-    # MODE VISITEUR
+    # LIVE AGENT FLOW
     # ==================================================
 
-    if display_mode == "Visiteur":
+    st.markdown(
+        '<div class="section-kicker">'
+        'Live Agent Flow'
+        '</div>',
+        unsafe_allow_html=True
+    )
 
-        status_container = st.status(
-            "Analyse scientifique en cours...",
-            expanded=False
-        )
+    st.subheader(
+        "L'écosystème travaille"
+    )
 
 
-    # ==================================================
-    # MODE EXPERT
-    # ==================================================
+    with st.status(
+        "Analyse agentique en cours...",
+        expanded=True
+    ) as status:
 
-    else:
 
         st.markdown(
-            '<div class="section-kicker">'
-            'Live Agent Flow'
-            '</div>',
-            unsafe_allow_html=True
+            "**RAG documentaire**"
         )
-
-        st.subheader(
-            "L'écosystème travaille"
-        )
-
-        status_container = st.status(
-            "Analyse agentique en cours...",
-            expanded=True
-        )
-
-
-    with status_container as status:
-
-
-        # ==============================================
-        # RAG
-        # ==============================================
-
-        if display_mode == "Expert":
-
-            st.markdown(
-                "**RAG documentaire**"
-            )
-
 
         rag_results = search(
             question,
             top_k=2
         )
 
-
-        if display_mode == "Expert":
-
-            st.caption(
-                f"{len(rag_results)} passage(s) "
-                "pertinent(s) retrouvé(s)"
-            )
+        st.caption(
+            f"{len(rag_results)} passage(s) pertinent(s) retrouvé(s)"
+        )
 
 
         rag_context = ""
@@ -1269,16 +1220,9 @@ if launch:
             )
 
 
-        # ==============================================
-        # MEMOIRE
-        # ==============================================
-
-        if display_mode == "Expert":
-
-            st.markdown(
-                "**Mémoire sémantique**"
-            )
-
+        st.markdown(
+            "**Mémoire sémantique**"
+        )
 
         memory_results = search_memory(
             question,
@@ -1286,13 +1230,9 @@ if launch:
             minimum_score=0.70
         )
 
-
-        if display_mode == "Expert":
-
-            st.caption(
-                f"{len(memory_results)} mémoire(s) "
-                "proche(s) retrouvée(s)"
-            )
+        st.caption(
+            f"{len(memory_results)} mémoire(s) proche(s) retrouvée(s)"
+        )
 
 
         memory_context = ""
@@ -1308,16 +1248,9 @@ if launch:
             )
 
 
-        # ==============================================
-        # ORCHESTRATEUR
-        # ==============================================
-
-        if display_mode == "Expert":
-
-            st.markdown(
-                "**Orchestrateur**"
-            )
-
+        st.markdown(
+            "**Orchestrateur**"
+        )
 
         orchestrator_result = (
             orchestrator.run(
@@ -1325,24 +1258,14 @@ if launch:
             )
         )
 
-
-        if display_mode == "Expert":
-
-            st.caption(
-                "Plan scientifique établi"
-            )
+        st.caption(
+            "Plan scientifique établi"
+        )
 
 
-        # ==============================================
-        # CHERCHEUR
-        # ==============================================
-
-        if display_mode == "Expert":
-
-            st.markdown(
-                "**Chercheur**"
-            )
-
+        st.markdown(
+            "**Chercheur**"
+        )
 
         research_result = (
             researcher.run(
@@ -1353,24 +1276,14 @@ if launch:
             )
         )
 
-
-        if display_mode == "Expert":
-
-            st.caption(
-                "Analyse scientifique terminée"
-            )
+        st.caption(
+            "Analyse scientifique terminée"
+        )
 
 
-        # ==============================================
-        # CRITIQUE
-        # ==============================================
-
-        if display_mode == "Expert":
-
-            st.markdown(
-                "**Critique scientifique**"
-            )
-
+        st.markdown(
+            "**Critique scientifique**"
+        )
 
         critic_result = (
             critic.run(
@@ -1379,24 +1292,14 @@ if launch:
             )
         )
 
-
-        if display_mode == "Expert":
-
-            st.caption(
-                "Vérification et nuances terminées"
-            )
+        st.caption(
+            "Vérification et nuances terminées"
+        )
 
 
-        # ==============================================
-        # MEDIATEUR
-        # ==============================================
-
-        if display_mode == "Expert":
-
-            st.markdown(
-                "**Médiateur scientifique**"
-            )
-
+        st.markdown(
+            "**Médiateur scientifique**"
+        )
 
         communicator_result = (
             communicator.run(
@@ -1406,30 +1309,16 @@ if launch:
             )
         )
 
-
-        if display_mode == "Expert":
-
-            st.caption(
-                f"Réponse adaptée au public : "
-                f"{audience}"
-            )
+        st.caption(
+            f"Réponse adaptée au public : {audience}"
+        )
 
 
-        if display_mode == "Expert":
-
-            status.update(
-                label="Analyse terminée",
-                state="complete",
-                expanded=False
-            )
-
-        else:
-
-            status.update(
-                label="Réponse prête",
-                state="complete",
-                expanded=False
-            )
+        status.update(
+            label="Analyse terminée",
+            state="complete",
+            expanded=False
+        )
 
 
     elapsed_time = (
@@ -1437,10 +1326,6 @@ if launch:
         - start_time
     )
 
-
-    # ==================================================
-    # PROVENANCE
-    # ==================================================
 
     (
         provenance_label,
@@ -1454,10 +1339,6 @@ if launch:
     )
 
 
-    # ==================================================
-    # FRONTIERES
-    # ==================================================
-
     knows, limits = (
         build_knowledge_boundaries(
             rag_results,
@@ -1465,10 +1346,6 @@ if launch:
         )
     )
 
-
-    # ==================================================
-    # CONFIANCE
-    # ==================================================
 
     confidence_score = (
         rag_strength * 0.8
@@ -1485,17 +1362,11 @@ if launch:
     )
 
 
-    # ==================================================
-    # COUTS
-    # ==================================================
-
     agents_data = [
 
         {
-            "Agent":
-                "Orchestrateur",
-            "Fonction":
-                "Planification",
+            "Agent": "Orchestrateur",
+            "Fonction": "Planification",
             "Entrée":
                 orchestrator_result["input_tokens"],
             "Sortie":
@@ -1503,10 +1374,8 @@ if launch:
         },
 
         {
-            "Agent":
-                "Chercheur",
-            "Fonction":
-                "Analyse scientifique",
+            "Agent": "Chercheur",
+            "Fonction": "Analyse scientifique",
             "Entrée":
                 research_result["input_tokens"],
             "Sortie":
@@ -1514,10 +1383,8 @@ if launch:
         },
 
         {
-            "Agent":
-                "Critique scientifique",
-            "Fonction":
-                "Contrôle",
+            "Agent": "Critique scientifique",
+            "Fonction": "Contrôle",
             "Entrée":
                 critic_result["input_tokens"],
             "Sortie":
@@ -1525,10 +1392,8 @@ if launch:
         },
 
         {
-            "Agent":
-                "Médiateur scientifique",
-            "Fonction":
-                "Médiation",
+            "Agent": "Médiateur scientifique",
+            "Fonction": "Médiation",
             "Entrée":
                 communicator_result["input_tokens"],
             "Sortie":
@@ -1541,12 +1406,10 @@ if launch:
         agents_data
     )
 
-
     df["Tokens"] = (
         df["Entrée"]
         + df["Sortie"]
     )
-
 
     df["Coût (€)"] = df.apply(
         lambda row:
@@ -1561,7 +1424,6 @@ if launch:
     total_tokens = int(
         df["Tokens"].sum()
     )
-
 
     total_cost = float(
         df["Coût (€)"].sum()
@@ -1586,10 +1448,6 @@ if launch:
         )
     )
 
-
-    # ==================================================
-    # MEMORISATION
-    # ==================================================
 
     sources_used = [
 
@@ -1617,10 +1475,6 @@ if launch:
         total_cost=total_cost
     )
 
-
-    # ==================================================
-    # SESSION
-    # ==================================================
 
     st.session_state.analysis_payload = {
 
@@ -1744,7 +1598,7 @@ if "analysis_payload" in st.session_state:
 
 
     # ==================================================
-    # REPONSE — TOUJOURS VISIBLE
+    # REPONSE
     # ==================================================
 
     st.divider()
@@ -1760,261 +1614,299 @@ if "analysis_payload" in st.session_state:
         "Réponse scientifique"
     )
 
+
+    st.markdown(
+        '<div class="provenance-badge">'
+        f'{payload["provenance_label"]}'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        payload["provenance_detail"]
+    )
+
+
     st.markdown(
         communicator_result["text"]
     )
 
 
     # ==================================================
-    # MODE EXPERT UNIQUEMENT
+    # FLOW
+    # ==================================================
+
+    st.subheader(
+        "Synthèse du traitement"
+    )
+
+
+    f1, f2, f3, f4, f5 = (
+        st.columns(5)
+    )
+
+
+    flow_data = [
+
+        (
+            f1,
+            "RAG",
+            f"{len(rag_results)} passages"
+        ),
+
+        (
+            f2,
+            "Mémoire",
+            f"{len(memory_results)} analyses"
+        ),
+
+        (
+            f3,
+            "Orchestrateur",
+            "Plan établi"
+        ),
+
+        (
+            f4,
+            "Critique",
+            "Contrôle effectué"
+        ),
+
+        (
+            f5,
+            "Médiateur",
+            payload["audience"]
+        )
+    ]
+
+
+    for (
+        column,
+        title,
+        result
+    ) in flow_data:
+
+        with column:
+
+            st.markdown(
+                '<div class="flow-card">'
+                f'<div class="flow-title">{title}</div>'
+                f'<div class="flow-result">{result}</div>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+
+    # ==================================================
+    # REPERES
+    # ==================================================
+
+    st.subheader(
+        "Repères"
+    )
+
+
+    r1, r2, r3, r4 = (
+        st.columns(4)
+    )
+
+
+    r1.metric(
+        "Sources documentaires",
+        len(rag_results)
+    )
+
+    r2.metric(
+        "Mémoires réutilisées",
+        len(memory_results)
+    )
+
+    r3.metric(
+        "Agents mobilisés",
+        4
+    )
+
+    r4.metric(
+        "Confiance documentaire",
+        f'{payload["confidence_percent"]}%'
+    )
+
+
+    # ==================================================
+    # FRONTIERES
+    # ==================================================
+
+    st.divider()
+
+    st.markdown(
+        '<div class="section-kicker">'
+        'Maîtrise de l’incertitude'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.header(
+        "Ce que l'agent sait — et ce qu'il ne peut pas confirmer"
+    )
+
+
+    knows_col, limits_col = (
+        st.columns(2)
+    )
+
+
+    with knows_col:
+
+        st.markdown(
+            '<div class="knowledge-card">'
+            '<div class="card-title">'
+            'Ce que l’agent peut étayer'
+            '</div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        for item in payload["knows"]:
+
+            st.markdown(
+                f"- {item}"
+            )
+
+
+    with limits_col:
+
+        st.markdown(
+            '<div class="limit-card">'
+            '<div class="card-title">'
+            'Ce qui reste à confirmer'
+            '</div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        for item in payload["limits"]:
+
+            st.markdown(
+                f"- {item}"
+            )
+
+
+    # ==================================================
+    # SOURCES
+    # ==================================================
+
+    st.divider()
+
+    st.markdown(
+        '<div class="section-kicker">'
+        'Sources'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.header(
+        "Contexte documentaire"
+    )
+
+
+    for result in rag_results:
+
+        score_percent = (
+            result["score"]
+            * 100
+        )
+
+        source_html = (
+            '<div class="source-card">'
+            '<div class="card-title">'
+            'Source documentaire'
+            '</div>'
+            '<div class="card-meta">'
+            f'{result["source"]}<br>'
+            f'Pertinence : {score_percent:.1f} %'
+            '</div>'
+            '</div>'
+        )
+
+        st.markdown(
+            source_html,
+            unsafe_allow_html=True
+        )
+
+
+        with st.expander(
+            f"Voir le passage — chunk "
+            f"{result['chunk_id']}"
+        ):
+
+            st.markdown(
+                result["text"]
+            )
+
+
+    # ==================================================
+    # FEEDBACK
+    # ==================================================
+
+    st.divider()
+
+    st.markdown(
+        '<div class="section-kicker">'
+        'Feedback'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.subheader(
+        "Cette réponse vous a-t-elle été utile ?"
+    )
+
+
+    feedback_col1, feedback_col2, spacer = (
+        st.columns(
+            [1, 1, 4]
+        )
+    )
+
+
+    with feedback_col1:
+
+        st.button(
+            "Utile",
+            key="feedback_useful",
+            on_click=
+                useful_feedback_callback
+        )
+
+
+    with feedback_col2:
+
+        st.button(
+            "À revoir",
+            key="feedback_review",
+            on_click=
+                review_feedback_callback
+        )
+
+
+    if st.session_state.get(
+        "user_feedback"
+    ):
+
+        st.caption(
+            f"Feedback actuel : "
+            f"{st.session_state.user_feedback}"
+        )
+
+
+    # ==================================================
+    # MODE EXPERT
     # ==================================================
 
     if display_mode == "Expert":
 
-
         # ==============================================
-        # PROVENANCE
-        # ==============================================
-
-        st.markdown(
-            '<div class="provenance-badge">'
-            f'{payload["provenance_label"]}'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.caption(
-            payload["provenance_detail"]
-        )
-
-
-        # ==============================================
-        # SYNTHÈSE
-        # ==============================================
-
-        st.subheader(
-            "Synthèse du traitement"
-        )
-
-
-        f1, f2, f3, f4, f5 = (
-            st.columns(5)
-        )
-
-
-        flow_data = [
-
-            (
-                f1,
-                "RAG",
-                f"{len(rag_results)} passages"
-            ),
-
-            (
-                f2,
-                "Mémoire",
-                f"{len(memory_results)} analyses"
-            ),
-
-            (
-                f3,
-                "Orchestrateur",
-                "Plan établi"
-            ),
-
-            (
-                f4,
-                "Critique",
-                "Contrôle effectué"
-            ),
-
-            (
-                f5,
-                "Médiateur",
-                payload["audience"]
-            )
-        ]
-
-
-        for (
-            column,
-            title,
-            result
-        ) in flow_data:
-
-            with column:
-
-                st.markdown(
-                    '<div class="flow-card">'
-                    f'<div class="flow-title">'
-                    f'{title}'
-                    '</div>'
-                    f'<div class="flow-result">'
-                    f'{result}'
-                    '</div>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-
-
-        # ==============================================
-        # REPERES
-        # ==============================================
-
-        st.subheader(
-            "Repères"
-        )
-
-
-        r1, r2, r3, r4 = (
-            st.columns(4)
-        )
-
-
-        r1.metric(
-            "Sources documentaires",
-            len(rag_results)
-        )
-
-        r2.metric(
-            "Mémoires réutilisées",
-            len(memory_results)
-        )
-
-        r3.metric(
-            "Agents mobilisés",
-            4
-        )
-
-        r4.metric(
-            "Confiance documentaire",
-            f'{payload["confidence_percent"]}%'
-        )
-
-
-        # ==============================================
-        # INCERTITUDE
-        # ==============================================
-
-        st.divider()
-
-        st.markdown(
-            '<div class="section-kicker">'
-            'Maîtrise de l’incertitude'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.header(
-            "Ce que l'agent sait — "
-            "et ce qu'il ne peut pas confirmer"
-        )
-
-
-        knows_col, limits_col = (
-            st.columns(2)
-        )
-
-
-        with knows_col:
-
-            st.markdown(
-                '<div class="knowledge-card">'
-                '<div class="card-title">'
-                'Ce que l’agent peut étayer'
-                '</div>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            for item in payload["knows"]:
-
-                st.markdown(
-                    f"- {item}"
-                )
-
-
-        with limits_col:
-
-            st.markdown(
-                '<div class="limit-card">'
-                '<div class="card-title">'
-                'Ce qui reste à confirmer'
-                '</div>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            for item in payload["limits"]:
-
-                st.markdown(
-                    f"- {item}"
-                )
-
-
-        # ==============================================
-        # SOURCES
-        # ==============================================
-
-        st.divider()
-
-        st.markdown(
-            '<div class="section-kicker">'
-            'Sources'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.header(
-            "Contexte documentaire"
-        )
-
-
-        if not rag_results:
-
-            st.caption(
-                "Aucun passage documentaire retrouvé."
-            )
-
-
-        for result in rag_results:
-
-            score_percent = (
-                result["score"]
-                * 100
-            )
-
-            source_html = (
-                '<div class="source-card">'
-                '<div class="card-title">'
-                'Source documentaire'
-                '</div>'
-                '<div class="card-meta">'
-                f'{result["source"]}<br>'
-                f'Pertinence : '
-                f'{score_percent:.1f} %'
-                '</div>'
-                '</div>'
-            )
-
-            st.markdown(
-                source_html,
-                unsafe_allow_html=True
-            )
-
-
-            with st.expander(
-                f"Voir le passage — chunk "
-                f"{result['chunk_id']}"
-            ):
-
-                st.markdown(
-                    result["text"]
-                )
-
-
-        # ==============================================
-        # KNOWLEDGE MAP
+        # CARTE DE CONNAISSANCE / PROVENANCE
         # ==============================================
 
         st.divider()
@@ -2031,45 +1923,29 @@ if "analysis_payload" in st.session_state:
         )
 
         st.caption(
-            "Vue simplifiée du chemin emprunté "
-            "par l'information."
+            "Vue simplifiée du chemin emprunté par l'information "
+            "dans l'écosystème."
         )
 
 
         st.markdown(
             '<div class="provenance-map">'
             '<div class="map-row">'
-            '<div class="map-node map-node-main">'
-            'Question'
-            '</div>'
+            '<div class="map-node map-node-main">Question</div>'
             '<div class="map-arrow">→</div>'
-            f'<div class="map-node">'
-            f'RAG<br>{len(rag_results)} passages'
-            f'</div>'
+            f'<div class="map-node">RAG<br>{len(rag_results)} passages</div>'
             '<div class="map-arrow">+</div>'
-            f'<div class="map-node">'
-            f'Mémoire<br>{len(memory_results)} analyses'
-            f'</div>'
+            f'<div class="map-node">Mémoire<br>{len(memory_results)} analyses</div>'
             '<div class="map-arrow">→</div>'
-            '<div class="map-node">'
-            'Orchestrateur'
-            '</div>'
+            '<div class="map-node">Orchestrateur</div>'
             '<div class="map-arrow">→</div>'
-            '<div class="map-node">'
-            'Chercheur'
-            '</div>'
+            '<div class="map-node">Chercheur</div>'
             '<div class="map-arrow">→</div>'
-            '<div class="map-node">'
-            'Critique'
-            '</div>'
+            '<div class="map-node">Critique</div>'
             '<div class="map-arrow">→</div>'
-            '<div class="map-node">'
-            'Médiateur'
-            '</div>'
+            '<div class="map-node">Médiateur</div>'
             '<div class="map-arrow">→</div>'
-            '<div class="map-node map-node-main">'
-            'Réponse'
-            '</div>'
+            '<div class="map-node map-node-main">Réponse</div>'
             '</div>'
             '</div>',
             unsafe_allow_html=True
@@ -2080,8 +1956,6 @@ if "analysis_payload" in st.session_state:
         # CRITIQUE
         # ==============================================
 
-        st.divider()
-
         st.markdown(
             '<div class="section-kicker">'
             'Contrôle'
@@ -2091,6 +1965,10 @@ if "analysis_payload" in st.session_state:
 
         st.header(
             "Points de vigilance scientifique"
+        )
+
+        st.caption(
+            "Analyse produite par l'agent critique."
         )
 
         st.markdown(
@@ -2134,8 +2012,7 @@ if "analysis_payload" in st.session_state:
                 f'Analyse #{result["id"]}'
                 '</div>'
                 '<div class="card-meta">'
-                f'Pertinence : '
-                f'{score_percent:.1f} %<br>'
+                f'Pertinence : {score_percent:.1f} %<br>'
                 f'Statut : {status_label}'
                 '</div>'
                 '</div>'
@@ -2148,7 +2025,7 @@ if "analysis_payload" in st.session_state:
 
 
         # ==============================================
-        # AGENTS
+        # TRAVAIL DES AGENTS
         # ==============================================
 
         st.subheader(
@@ -2311,7 +2188,7 @@ if "analysis_payload" in st.session_state:
 
 
         # ==============================================
-        # DASHBOARD GLOBAL
+        # ECOSYSTEME GLOBAL
         # ==============================================
 
         st.divider()
@@ -2407,7 +2284,7 @@ if "analysis_payload" in st.session_state:
             )
 
 
-        # ==============================================
+               # ==============================================
         # HISTORIQUE + VALIDATION
         # ==============================================
 
@@ -2454,35 +2331,41 @@ if "analysis_payload" in st.session_state:
                 selected_filter
             ):
 
-                status_value = entry.get(
+                status = entry.get(
                     "status",
                     "generated_unvalidated"
                 )
 
-                if selected_filter == "Toutes":
+                if (
+                    selected_filter
+                    == "Toutes"
+                ):
                     return True
 
                 if (
                     selected_filter
                     == "En attente de validation"
                 ):
-
                     return (
-                        status_value
+                        status
                         == "generated_unvalidated"
                     )
 
-                if selected_filter == "Validées":
-
+                if (
+                    selected_filter
+                    == "Validées"
+                ):
                     return (
-                        status_value
+                        status
                         == "generated_validated"
                     )
 
-                if selected_filter == "Rejetées":
-
+                if (
+                    selected_filter
+                    == "Rejetées"
+                ):
                     return (
-                        status_value
+                        status
                         == "generated_rejected"
                     )
 
@@ -2510,24 +2393,24 @@ if "analysis_payload" in st.session_state:
 
             for item in filtered_history:
 
-                history_id = (
+                memory_id_history = (
                     item.get("id")
                 )
 
-                history_status = (
+                memory_status = (
                     item.get(
                         "status",
                         "generated_unvalidated"
                     )
                 )
 
-                history_status_label = (
+                status_label = (
                     memory_status_label(
-                        history_status
+                        memory_status
                     )
                 )
 
-                history_question = (
+                question_history = (
                     item.get(
                         "question",
                         ""
@@ -2536,18 +2419,17 @@ if "analysis_payload" in st.session_state:
 
 
                 with st.expander(
-                    f"#{history_id} — "
-                    f"{history_status_label} — "
-                    f"{history_question}"
+                    f"#{memory_id_history} — "
+                    f"{status_label} — "
+                    f"{question_history}"
                 ):
-
 
                     st.markdown(
                         "**Question**"
                     )
 
                     st.write(
-                        history_question
+                        question_history
                     )
 
 
@@ -2563,7 +2445,7 @@ if "analysis_payload" in st.session_state:
                     )
 
 
-                    history_critique = (
+                    critique_history = (
                         item.get(
                             "critique",
                             ""
@@ -2571,15 +2453,32 @@ if "analysis_payload" in st.session_state:
                     )
 
 
-                    if history_critique:
+                    if critique_history:
 
                         with st.expander(
                             "Voir la critique scientifique"
                         ):
 
                             st.markdown(
-                                history_critique
+                                critique_history
                             )
+
+
+                    tokens_history = (
+                        item.get(
+                            "total_tokens",
+                            0
+                        )
+                        or 0
+                    )
+
+                    cost_history = (
+                        item.get(
+                            "total_cost",
+                            0
+                        )
+                        or 0
+                    )
 
 
                     h1, h2, h3 = (
@@ -2587,42 +2486,31 @@ if "analysis_payload" in st.session_state:
                     )
 
 
-                    history_tokens = (
-                        item.get(
-                            "total_tokens",
-                            0
-                        ) or 0
-                    )
-
-                    history_cost = (
-                        item.get(
-                            "total_cost",
-                            0
-                        ) or 0
-                    )
-
-
                     h1.metric(
                         "Statut",
-                        history_status_label
+                        status_label
                     )
 
                     h2.metric(
                         "Tokens",
-                        f"{history_tokens:,}"
+                        f"{tokens_history:,}"
                         .replace(",", " ")
                     )
 
                     h3.metric(
                         "Coût",
                         format_eur(
-                            history_cost
+                            cost_history
                         )
                     )
 
 
+                    # ----------------------------------
+                    # ACTIONS DE GOUVERNANCE
+                    # ----------------------------------
+
                     if (
-                        history_status
+                        memory_status
                         == "generated_unvalidated"
                     ):
 
@@ -2644,25 +2532,22 @@ if "analysis_payload" in st.session_state:
                                 "Valider",
                                 key=
                                     f"history_validate_"
-                                    f"{history_id}"
+                                    f"{memory_id_history}"
                             ):
 
                                 result = (
                                     validate_memory_entry(
-                                        history_id
+                                        memory_id_history
                                     )
                                 )
 
                                 if result["success"]:
 
-                                    if (
-                                        memory_entry["id"]
-                                        == history_id
-                                    ):
-
-                                        memory_entry["status"] = (
-                                            "generated_validated"
-                                        )
+                                    st.success(
+                                        f"Mémoire "
+                                        f"#{memory_id_history} "
+                                        f"validée."
+                                    )
 
                                     st.rerun()
 
@@ -2673,31 +2558,28 @@ if "analysis_payload" in st.session_state:
                                 "Rejeter",
                                 key=
                                     f"history_reject_"
-                                    f"{history_id}"
+                                    f"{memory_id_history}"
                             ):
 
                                 result = (
                                     reject_memory_entry(
-                                        history_id
+                                        memory_id_history
                                     )
                                 )
 
                                 if result["success"]:
 
-                                    if (
-                                        memory_entry["id"]
-                                        == history_id
-                                    ):
-
-                                        memory_entry["status"] = (
-                                            "generated_rejected"
-                                        )
+                                    st.warning(
+                                        f"Mémoire "
+                                        f"#{memory_id_history} "
+                                        f"rejetée."
+                                    )
 
                                     st.rerun()
 
 
                     elif (
-                        history_status
+                        memory_status
                         == "generated_validated"
                     ):
 
@@ -2707,14 +2589,13 @@ if "analysis_payload" in st.session_state:
 
 
                     elif (
-                        history_status
+                        memory_status
                         == "generated_rejected"
                     ):
 
                         st.warning(
                             "Cette analyse a été rejetée."
                         )
-
 
         # ==============================================
         # PROJECTION
@@ -2754,181 +2635,124 @@ if "analysis_payload" in st.session_state:
         )
 
 
-        # ==============================================
-        # CAPITALISATION
-        # ==============================================
-
-        st.divider()
-
-        st.markdown(
-            '<div class="section-kicker">'
-            'Capitalisation'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.header(
-            "Mémoire de l'écosystème"
-        )
-
-
-        memory_id = (
-            memory_entry["id"]
-        )
-
-
-        if memory_entry["duplicate"]:
-
-            duplicate_percent = (
-                memory_entry[
-                    "duplicate_score"
-                ]
-                * 100
-            )
-
-            st.info(
-                f"Cette analyse est déjà présente "
-                f"en mémoire. "
-                f"Similarité : "
-                f"{duplicate_percent:.1f} %. "
-                f"Mémoire existante : #{memory_id}. "
-                f"Aucun doublon créé."
-            )
-
-        else:
-
-            st.success(
-                f"Nouvelle analyse mémorisée — "
-                f"#{memory_id}."
-            )
-
-
-        current_status = (
-            memory_entry["status"]
-        )
-
-
-        st.caption(
-            f"Statut : "
-            f"{memory_status_label(current_status)}"
-        )
-
-
-        if (
-            current_status
-            == "generated_unvalidated"
-        ):
-
-            st.markdown(
-                "**Validation humaine**"
-            )
-
-
-            validate_col, reject_col, spacer = (
-                st.columns(
-                    [1, 1, 4]
-                )
-            )
-
-
-            with validate_col:
-
-                st.button(
-                    "Valider",
-                    key=
-                        f"validate_{memory_id}",
-                    on_click=
-                        validate_memory_callback,
-                    args=(
-                        memory_id,
-                    )
-                )
-
-
-            with reject_col:
-
-                st.button(
-                    "Rejeter",
-                    key=
-                        f"reject_{memory_id}",
-                    on_click=
-                        reject_memory_callback,
-                    args=(
-                        memory_id,
-                    )
-                )
-
-
-        elif (
-            current_status
-            == "generated_validated"
-        ):
-
-            st.success(
-                "Cette mémoire a été validée."
-            )
-
-
-        elif (
-            current_status
-            == "generated_rejected"
-        ):
-
-            st.warning(
-                "Cette mémoire a été rejetée."
-            )
-
-
     # ==================================================
-    # FEEDBACK — VISITEUR ET EXPERT
+    # CAPITALISATION
     # ==================================================
 
     st.divider()
 
     st.markdown(
         '<div class="section-kicker">'
-        'Votre avis'
+        'Capitalisation'
         '</div>',
         unsafe_allow_html=True
     )
 
-    st.subheader(
-        "Cette réponse vous a-t-elle été utile ?"
+    st.header(
+        "Mémoire de l'écosystème"
     )
 
 
-    feedback_col1, feedback_col2, spacer = (
-        st.columns(
-            [1, 1, 4]
-        )
+    memory_id = (
+        memory_entry["id"]
     )
 
 
-    with feedback_col1:
+    if memory_entry["duplicate"]:
 
-        st.button(
-            "Utile",
-            key="feedback_useful",
-            on_click=
-                useful_feedback_callback
+        duplicate_percent = (
+            memory_entry[
+                "duplicate_score"
+            ]
+            * 100
+        )
+
+        st.info(
+            f"Cette analyse est déjà présente en mémoire. "
+            f"Similarité : {duplicate_percent:.1f} %. "
+            f"Mémoire existante : #{memory_id}. "
+            f"Aucun doublon créé."
+        )
+
+    else:
+
+        st.success(
+            f"Nouvelle analyse mémorisée — "
+            f"#{memory_id}."
         )
 
 
-    with feedback_col2:
-
-        st.button(
-            "À revoir",
-            key="feedback_review",
-            on_click=
-                review_feedback_callback
-        )
+    current_status = (
+        memory_entry["status"]
+    )
 
 
-    if st.session_state.get(
-        "user_feedback"
+    st.caption(
+        f"Statut : "
+        f"{memory_status_label(current_status)}"
+    )
+
+
+    if (
+        current_status
+        == "generated_unvalidated"
     ):
 
-        st.caption(
-            f"Votre avis : "
-            f"{st.session_state.user_feedback}"
+        st.markdown(
+            "**Validation humaine**"
+        )
+
+
+        validate_col, reject_col, spacer = (
+            st.columns(
+                [1, 1, 4]
+            )
+        )
+
+
+        with validate_col:
+
+            st.button(
+                "Valider",
+                key=
+                    f"validate_{memory_id}",
+                on_click=
+                    validate_memory_callback,
+                args=(
+                    memory_id,
+                )
+            )
+
+
+        with reject_col:
+
+            st.button(
+                "Rejeter",
+                key=
+                    f"reject_{memory_id}",
+                on_click=
+                    reject_memory_callback,
+                args=(
+                    memory_id,
+                )
+            )
+
+
+    elif (
+        current_status
+        == "generated_validated"
+    ):
+
+        st.success(
+            "Cette mémoire a été validée."
+        )
+
+
+    elif (
+        current_status
+        == "generated_rejected"
+    ):
+
+        st.warning(
+            "Cette mémoire a été rejetée."
         )
