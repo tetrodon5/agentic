@@ -15,7 +15,7 @@ from openai import OpenAI
 load_dotenv()
 
 st.set_page_config(
-    page_title="Agent scientifique - Cité du Vin",
+    page_title="Agent scientifique - Agent du Vin",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
