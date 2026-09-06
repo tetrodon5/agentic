@@ -33,6 +33,26 @@ client = OpenAI(api_key=api_key)
 
 
 # ==================================================
+# TARIFICATION GPT-5.6 LUNA
+# ==================================================
+
+INPUT_PRICE_PER_MILLION = 0.20
+OUTPUT_PRICE_PER_MILLION = 1.20
+
+
+def calculate_cost(input_tokens, output_tokens):
+    input_cost = (
+        input_tokens / 1_000_000
+    ) * INPUT_PRICE_PER_MILLION
+
+    output_cost = (
+        output_tokens / 1_000_000
+    ) * OUTPUT_PRICE_PER_MILLION
+
+    return input_cost + output_cost
+
+
+# ==================================================
 # DESIGN GLOBAL
 # ==================================================
 
@@ -144,7 +164,6 @@ st.markdown(
         color: var(--wine);
         font-weight: 600;
         min-height: 46px;
-        transition: all 0.15s ease-in-out;
     }
 
     .stButton > button:hover {
@@ -166,11 +185,6 @@ st.markdown(
         border-radius: 12px;
         padding: 1rem 1.1rem;
         box-shadow: 0 4px 18px rgba(60, 40, 45, 0.04);
-    }
-
-    div[data-testid="stDataFrame"] {
-        border-radius: 12px;
-        overflow: hidden;
     }
 
     hr {
@@ -386,11 +400,60 @@ if launch:
 
     elapsed_time = time.time() - start_time
 
-    total_tokens = (
-        orchestrator_result["total_tokens"]
-        + research_result["total_tokens"]
-        + critic_result["total_tokens"]
-        + communicator_result["total_tokens"]
+
+    # ==================================================
+    # COÛTS PAR AGENT
+    # ==================================================
+
+    agents_data = [
+        {
+            "Agent": "Orchestrateur",
+            "Fonction": "Planification",
+            "Entrée": orchestrator_result["input_tokens"],
+            "Sortie": orchestrator_result["output_tokens"]
+        },
+        {
+            "Agent": "Chercheur",
+            "Fonction": "Analyse scientifique",
+            "Entrée": research_result["input_tokens"],
+            "Sortie": research_result["output_tokens"]
+        },
+        {
+            "Agent": "Critique scientifique",
+            "Fonction": "Contrôle",
+            "Entrée": critic_result["input_tokens"],
+            "Sortie": critic_result["output_tokens"]
+        },
+        {
+            "Agent": "Médiateur scientifique",
+            "Fonction": "Vulgarisation",
+            "Entrée": communicator_result["input_tokens"],
+            "Sortie": communicator_result["output_tokens"]
+        }
+    ]
+
+    df = pd.DataFrame(agents_data)
+
+    df["Tokens"] = df["Entrée"] + df["Sortie"]
+
+    df["Coût ($)"] = df.apply(
+        lambda row: calculate_cost(
+            row["Entrée"],
+            row["Sortie"]
+        ),
+        axis=1
+    )
+
+    total_tokens = int(df["Tokens"].sum())
+    total_cost = float(df["Coût ($)"].sum())
+
+    df["Pondération (%)"] = (
+        df["Tokens"] / total_tokens * 100
+    ).round(1)
+
+    # Affichage plus lisible des coûts
+    df["Coût estimé ($)"] = df["Coût ($)"].map(
+        lambda x: f"{x:.6f}"
     )
 
 
@@ -421,43 +484,14 @@ if launch:
         unsafe_allow_html=True
     )
 
-    st.header("Observabilité de l'écosystème")
-
-    agents_data = [
-        {
-            "Agent": "Orchestrateur",
-            "Fonction": "Planification",
-            "Tokens": orchestrator_result["total_tokens"]
-        },
-        {
-            "Agent": "Chercheur",
-            "Fonction": "Analyse scientifique",
-            "Tokens": research_result["total_tokens"]
-        },
-        {
-            "Agent": "Critique scientifique",
-            "Fonction": "Contrôle",
-            "Tokens": critic_result["total_tokens"]
-        },
-        {
-            "Agent": "Médiateur scientifique",
-            "Fonction": "Vulgarisation",
-            "Tokens": communicator_result["total_tokens"]
-        }
-    ]
-
-    df = pd.DataFrame(agents_data)
-
-    df["Pondération (%)"] = (
-        df["Tokens"] / total_tokens * 100
-    ).round(1)
+    st.header("Observabilité & coûts")
 
 
     # ==================================================
-    # METRIQUES
+    # METRIQUES PRINCIPALES
     # ==================================================
 
-    m1, m2, m3 = st.columns(3)
+    m1, m2, m3, m4 = st.columns(4)
 
     m1.metric(
         "Agents mobilisés",
@@ -465,34 +499,54 @@ if launch:
     )
 
     m2.metric(
-        "Tokens consommés",
+        "Tokens",
         f"{total_tokens:,}".replace(",", " ")
     )
 
     m3.metric(
-        "Temps d'exécution",
+        "Temps",
         f"{elapsed_time:.1f} s"
+    )
+
+    m4.metric(
+        "Coût estimé",
+        f"${total_cost:.5f}"
     )
 
 
     # ==================================================
-    # TABLEAU + GRAPH
+    # TABLEAU
     # ==================================================
 
-    left, right = st.columns([1.4, 1])
+    st.caption("Consommation et coût par agent")
+
+    display_df = df[
+        [
+            "Agent",
+            "Fonction",
+            "Entrée",
+            "Sortie",
+            "Tokens",
+            "Pondération (%)",
+            "Coût estimé ($)"
+        ]
+    ]
+
+    st.dataframe(
+        display_df,
+        width="stretch",
+        hide_index=True,
+        height=180
+    )
+
+
+    # ==================================================
+    # PONDÉRATION + COÛT
+    # ==================================================
+
+    left, right = st.columns(2)
 
     with left:
-
-        st.caption("Répartition par agent")
-
-        st.dataframe(
-            df,
-            width="stretch",
-            hide_index=True,
-            height=180
-        )
-
-    with right:
 
         st.caption("Pondération du traitement")
 
@@ -507,24 +561,71 @@ if launch:
             width="stretch"
         )
 
+    with right:
+
+        st.caption("Coût estimé par agent")
+
+        cost_chart = (
+            df[["Agent", "Coût ($)"]]
+            .set_index("Agent")
+        )
+
+        st.bar_chart(
+            cost_chart,
+            height=220,
+            width="stretch"
+        )
+
 
     # ==================================================
-    # CONTRIBUTION RELATIVE
+    # PROJECTION DE COÛT
+    # ==================================================
+
+    st.subheader("Projection de coût")
+
+    p1, p2, p3 = st.columns(3)
+
+    p1.metric(
+        "1 analyse",
+        f"${total_cost:.5f}"
+    )
+
+    p2.metric(
+        "100 analyses similaires",
+        f"${total_cost * 100:.2f}"
+    )
+
+    p3.metric(
+        "1 000 analyses similaires",
+        f"${total_cost * 1000:.2f}"
+    )
+
+    st.caption(
+        "Projection indicative basée sur la consommation de ce run "
+        "et les tarifs GPT-5.6 Luna. La consommation réelle varie "
+        "selon la longueur et la complexité des questions et réponses."
+    )
+
+
+    # ==================================================
+    # CONTRIBUTION
     # ==================================================
 
     st.caption("Contribution relative des agents")
 
     for _, row in df.iterrows():
 
-        c_name, c_pct = st.columns([3, 1])
+        c1, c2 = st.columns([4, 1])
 
-        with c_name:
+        with c1:
             st.write(row["Agent"])
 
-        with c_pct:
+        with c2:
             st.write(f'{row["Pondération (%)"]} %')
 
-        st.progress(int(row["Pondération (%)"]))
+        st.progress(
+            int(row["Pondération (%)"])
+        )
 
 
     # ==================================================
