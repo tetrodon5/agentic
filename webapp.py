@@ -6,7 +6,10 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
-
+from domain_guard import (
+    is_wine_domain,
+    get_out_of_domain_message
+)
 
 # ==================================================
 # CONFIGURATION
@@ -1181,7 +1184,13 @@ if launch:
 
         st.stop()
 
+if not is_wine_domain(question):
 
+    st.warning(
+        get_out_of_domain_message()
+    )
+
+    st.stop()
     st.session_state.user_feedback = None
 
     start_time = time.time()
