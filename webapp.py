@@ -69,6 +69,8 @@ st.markdown(
         --cream-light: #FCFAF7;
         --ink: #242A35;
         --border: #D9CEC7;
+        --doc-bg: #F4F1EC;
+        --memory-bg: #F3EEF2;
     }
 
     .stApp {
@@ -158,6 +160,22 @@ st.markdown(
         margin-bottom: 0.25rem;
     }
 
+    .source-card {
+        background: var(--doc-bg);
+        border-left: 5px solid #8C7B68;
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .memory-card {
+        background: var(--memory-bg);
+        border-left: 5px solid var(--wine);
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 0.8rem;
+    }
+
     .stButton > button {
         border-radius: 8px;
         border: 1px solid var(--wine);
@@ -211,7 +229,7 @@ communicator = CommunicatorAgent(client)
 
 
 # ==================================================
-# QUESTIONS SUGGÉRÉES
+# QUESTIONS
 # ==================================================
 
 question_bank = [
@@ -241,7 +259,6 @@ if "question" not in st.session_state:
 hero_left, hero_right = st.columns([2.5, 1])
 
 with hero_left:
-
     st.markdown(
         '<div class="hero-kicker">FCCV | DÉMONSTRATION IA</div>',
         unsafe_allow_html=True
@@ -260,7 +277,7 @@ with hero_left:
         '<div class="hero-copy">'
         "Une démonstration d'écosystème agentique appliqué aux "
         "connaissances scientifiques et culturelles du vin. "
-        "Le système combine recherche documentaire, mémoire générée, "
+        "Le système combine RAG documentaire, mémoire sémantique, "
         "contrôle scientifique et médiation."
         '</div>',
         unsafe_allow_html=True
@@ -274,7 +291,6 @@ with hero_left:
     )
 
 with hero_right:
-
     st.markdown(
         """
         <div class="demo-card">
@@ -296,7 +312,7 @@ st.divider()
 
 
 # ==================================================
-# QUESTIONS
+# EXPLORATION
 # ==================================================
 
 st.markdown(
@@ -360,9 +376,9 @@ if launch:
     start_time = time.time()
 
 
-    # ==================================================
-    # RAG DOCUMENTAIRE
-    # ==================================================
+    # --------------------------------------------------
+    # RAG
+    # --------------------------------------------------
 
     rag_results = search(
         question,
@@ -380,9 +396,9 @@ if launch:
         )
 
 
-    # ==================================================
-    # MÉMOIRE SÉMANTIQUE
-    # ==================================================
+    # --------------------------------------------------
+    # Mémoire
+    # --------------------------------------------------
 
     memory_results = search_memory(
         question,
@@ -402,44 +418,52 @@ if launch:
         )
 
 
-    # ==================================================
-    # AGENTS
-    # ==================================================
+    # --------------------------------------------------
+    # Agents
+    # --------------------------------------------------
 
     with st.status(
         "Analyse agentique en cours...",
         expanded=True
     ) as status:
 
-        st.write("RAG — recherche des passages documentaires")
-        st.write(f"{len(rag_results)} passages retrouvés")
+        st.markdown("**RAG — recherche documentaire**")
+        st.caption(
+            f"{len(rag_results)} passage(s) documentaire(s) retrouvé(s)"
+        )
 
-        st.write("Mémoire — recherche des analyses précédentes")
-        st.write(f"{len(memory_results)} mémoire(s) proche(s) retrouvée(s)")
+        st.markdown("**Mémoire — analyses précédentes**")
+        st.caption(
+            f"{len(memory_results)} mémoire(s) proche(s) retrouvée(s)"
+        )
 
-        st.write("Orchestrateur — analyse et planification")
+        st.markdown("**Orchestrateur**")
         orchestrator_result = orchestrator.run(question)
+        st.caption("Planification terminée")
 
-        st.write("Chercheur — investigation scientifique")
+        st.markdown("**Chercheur**")
         research_result = researcher.run(
             question,
             orchestrator_result["text"],
             rag_context,
             memory_context
         )
+        st.caption("Analyse scientifique terminée")
 
-        st.write("Critique scientifique — vérification et challenge")
+        st.markdown("**Critique scientifique**")
         critic_result = critic.run(
             question,
             research_result["text"]
         )
+        st.caption("Vérification scientifique terminée")
 
-        st.write("Médiateur scientifique — synthèse et vulgarisation")
+        st.markdown("**Médiateur scientifique**")
         communicator_result = communicator.run(
             question,
             research_result["text"],
             critic_result["text"]
         )
+        st.caption("Synthèse et vulgarisation terminées")
 
         status.update(
             label="Analyse terminée",
@@ -448,6 +472,40 @@ if launch:
         )
 
     elapsed_time = time.time() - start_time
+
+
+    # ==================================================
+    # SCORE DE CONFIANCE
+    # ==================================================
+
+    if rag_results:
+        avg_rag_score = (
+            sum(r["score"] for r in rag_results)
+            / len(rag_results)
+        )
+    else:
+        avg_rag_score = 0
+
+    if memory_results:
+        best_memory_score = max(
+            r["score"] for r in memory_results
+        )
+    else:
+        best_memory_score = 0
+
+    confidence_score = (
+        avg_rag_score * 0.8
+        + best_memory_score * 0.2
+    )
+
+    confidence_score = min(
+        confidence_score,
+        0.95
+    )
+
+    confidence_percent = round(
+        confidence_score * 100
+    )
 
 
     # ==================================================
@@ -483,7 +541,10 @@ if launch:
 
     df = pd.DataFrame(agents_data)
 
-    df["Tokens"] = df["Entrée"] + df["Sortie"]
+    df["Tokens"] = (
+        df["Entrée"]
+        + df["Sortie"]
+    )
 
     df["Coût ($)"] = df.apply(
         lambda row: calculate_cost(
@@ -493,20 +554,28 @@ if launch:
         axis=1
     )
 
-    total_tokens = int(df["Tokens"].sum())
-    total_cost = float(df["Coût ($)"].sum())
+    total_tokens = int(
+        df["Tokens"].sum()
+    )
+
+    total_cost = float(
+        df["Coût ($)"].sum()
+    )
 
     df["Pondération (%)"] = (
-        df["Tokens"] / total_tokens * 100
+        df["Tokens"]
+        / total_tokens
+        * 100
     ).round(1)
 
-    df["Coût estimé ($)"] = df["Coût ($)"].map(
-        lambda x: f"{x:.6f}"
+    df["Coût estimé ($)"] = (
+        df["Coût ($)"]
+        .map(lambda x: f"{x:.6f}")
     )
 
 
     # ==================================================
-    # REPONSE
+    # RESULTAT
     # ==================================================
 
     st.divider()
@@ -518,67 +587,132 @@ if launch:
 
     st.header("Réponse scientifique")
 
-    st.markdown(communicator_result["text"])
+    st.markdown(
+        communicator_result["text"]
+    )
 
 
     # ==================================================
-    # SOURCES RAG
+    # CONFIANCE
+    # ==================================================
+
+    st.subheader(
+        "Indice de confiance documentaire"
+    )
+
+    c1, c2 = st.columns(
+        [1, 4]
+    )
+
+    with c1:
+        st.metric(
+            "Confiance",
+            f"{confidence_percent}%"
+        )
+
+    with c2:
+        st.progress(
+            confidence_percent
+        )
+
+        st.caption(
+            "Indice indicatif calculé à partir de la pertinence "
+            "des sources documentaires retrouvées et de la mémoire disponible. "
+            "Il ne constitue pas une mesure absolue de vérité."
+        )
+
+
+    # ==================================================
+    # SOURCES
     # ==================================================
 
     st.divider()
 
     st.markdown(
-        '<div class="section-kicker">Grounding</div>',
+        '<div class="section-kicker">Sources</div>',
         unsafe_allow_html=True
     )
 
-    st.header("Sources documentaires utilisées")
+    st.header(
+        "Contexte utilisé"
+    )
+
+    st.subheader(
+        "Sources documentaires"
+    )
+
+    if not rag_results:
+        st.caption(
+            "Aucune source documentaire retrouvée."
+        )
 
     for result in rag_results:
 
-        score_percent = result["score"] * 100
-
-        with st.expander(
-            f"{result['source']} — pertinence {score_percent:.1f}%"
-        ):
-            st.caption(
-                f"Chunk {result['chunk_id']}"
-            )
-            st.markdown(result["text"])
-
-
-    # ==================================================
-    # MEMOIRE UTILISEE
-    # ==================================================
-
-    st.subheader("Mémoire réutilisée")
-
-    if not memory_results:
-
-        st.caption(
-            "Aucune analyse antérieure suffisamment proche n'a été utilisée."
+        score_percent = (
+            result["score"] * 100
         )
 
-    else:
+        st.markdown(
+            f"""
+            <div class="source-card">
+                <b>Source documentaire</b><br>
+                {result['source']}<br>
+                Pertinence : {score_percent:.1f} %
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        for result in memory_results:
+        with st.expander(
+            f"Voir le passage — chunk {result['chunk_id']}"
+        ):
+            st.markdown(
+                result["text"]
+            )
 
-            score_percent = result["score"] * 100
 
-            with st.expander(
-                f"Mémoire #{result['id']} — pertinence {score_percent:.1f}%"
-            ):
-                st.write(
-                    f"Statut : {result['status']}"
-                )
-                st.write(
-                    f"Question précédente : {result['question']}"
-                )
+    # ==================================================
+    # MEMOIRE
+    # ==================================================
 
-                st.warning(
-                    "Cette mémoire est générée par l'IA et n'est pas "
-                    "considérée comme une source documentaire validée."
-                )
+    st.subheader(
+        "Mémoire générée"
+    )
+
+    if not memory_results:
+        st.caption(
+            "Aucune analyse antérieure suffisamment proche."
+        )
+
+    for result in memory_results:
+
+        score_percent = (
+            result["score"] * 100
+        )
+
+        st.markdown(
+            f"""
+            <div class="memory-card">
+                <b>Mémoire générée</b><br>
+                Analyse #{result['id']}<br>
+                Pertinence : {score_percent:.1f} %<br>
+                Statut : {result['status']}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        with st.expander(
+            f"Voir la question mémorisée #{result['id']}"
+        ):
+            st.write(
+                result["question"]
+            )
+
+        st.caption(
+            "La mémoire générée complète le contexte mais "
+            "n'est pas considérée comme une source documentaire validée."
+        )
 
 
     # ==================================================
@@ -588,11 +722,13 @@ if launch:
     st.divider()
 
     st.markdown(
-        '<div class="section-kicker">Pilotage du système</div>',
+        '<div class="section-kicker">Pilotage</div>',
         unsafe_allow_html=True
     )
 
-    st.header("Observabilité & coûts")
+    st.header(
+        "Observabilité & coûts"
+    )
 
     m1, m2, m3, m4 = st.columns(4)
 
@@ -649,10 +785,17 @@ if launch:
 
     with left:
 
-        st.caption("Pondération du traitement")
+        st.caption(
+            "Pondération du traitement"
+        )
 
         chart_df = (
-            df[["Agent", "Pondération (%)"]]
+            df[
+                [
+                    "Agent",
+                    "Pondération (%)"
+                ]
+            ]
             .set_index("Agent")
         )
 
@@ -664,10 +807,17 @@ if launch:
 
     with right:
 
-        st.caption("Coût estimé par agent")
+        st.caption(
+            "Coût estimé par agent"
+        )
 
         cost_chart = (
-            df[["Agent", "Coût ($)"]]
+            df[
+                [
+                    "Agent",
+                    "Coût ($)"
+                ]
+            ]
             .set_index("Agent")
         )
 
@@ -682,7 +832,9 @@ if launch:
     # PROJECTION
     # ==================================================
 
-    st.subheader("Projection de coût")
+    st.subheader(
+        "Projection de coût"
+    )
 
     p1, p2, p3 = st.columns(3)
 
@@ -713,19 +865,37 @@ if launch:
         unsafe_allow_html=True
     )
 
-    st.header("Explorer le travail des agents")
+    st.header(
+        "Explorer le travail des agents"
+    )
 
-    with st.expander("Orchestrateur — plan scientifique"):
-        st.markdown(orchestrator_result["text"])
+    with st.expander(
+        "Orchestrateur — plan scientifique"
+    ):
+        st.markdown(
+            orchestrator_result["text"]
+        )
 
-    with st.expander("Chercheur — analyse scientifique"):
-        st.markdown(research_result["text"])
+    with st.expander(
+        "Chercheur — analyse scientifique"
+    ):
+        st.markdown(
+            research_result["text"]
+        )
 
-    with st.expander("Critique scientifique — vérification"):
-        st.markdown(critic_result["text"])
+    with st.expander(
+        "Critique scientifique — vérification"
+    ):
+        st.markdown(
+            critic_result["text"]
+        )
 
-    with st.expander("Médiateur scientifique — synthèse"):
-        st.markdown(communicator_result["text"])
+    with st.expander(
+        "Médiateur scientifique — synthèse"
+    ):
+        st.markdown(
+            communicator_result["text"]
+        )
 
 
     # ==================================================
